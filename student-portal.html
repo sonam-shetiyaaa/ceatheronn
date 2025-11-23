@@ -1,0 +1,2237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HostelHub - Student Portal</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --primary-dark: #1e40af;
+      --secondary: #64748b;
+      --success: #10b981;
+      --danger: #ef4444;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --text-light: #64748b;
+      --border: #e2e8f0;
+      --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      background-attachment: fixed;
+      color: var(--text);
+      line-height: 1.6;
+      transition: all 0.3s ease;
+      scroll-behavior: auto;
+    }
+
+    html {
+      scroll-behavior: auto;
+    }
+
+    .screen {
+      display: none;
+      min-height: 100vh;
+    }
+
+    .screen.active {
+      display: block;
+    }
+
+    /* Auth screen - visible by default, no animation */
+    #authScreen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      width: 100vw;
+      opacity: 1;
+      transform: none;
+    }
+
+    /* Dashboard screen - hidden by default, will animate in */
+    #studentScreen {
+      display: none;
+      opacity: 0;
+      transform: translateX(100%);
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    #studentScreen.active {
+      display: block;
+      opacity: 1;
+      transform: translateX(0);
+      animation: slideInFromRight 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Complaint Detail Screen */
+    #complaintDetailScreen {
+      display: none;
+      opacity: 0;
+      transform: translateX(100%);
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    #complaintDetailScreen.active {
+      display: block;
+      opacity: 1;
+      transform: translateX(0);
+      animation: slideInFromRight 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .screen.exiting {
+      opacity: 0;
+      transform: translateX(-100%);
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes slideInFromRight {
+      from {
+        opacity: 0;
+        transform: translateX(50px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes slideOutToLeft {
+      from {
+        opacity: 1;
+        transform: translateX(0);
+      }
+      to {
+        opacity: 0;
+        transform: translateX(-50px);
+      }
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+    }
+
+    /* Auth Screen */
+    #authScreen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      background-size: 400% 400%;
+      animation: gradientShift 10s ease infinite;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      min-height: 100vh;
+    }
+
+    #authScreen::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+      animation: rotate 25s linear infinite;
+    }
+
+    #authScreen::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: 
+        radial-gradient(circle at 20% 50%, rgba(255,255,255,0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 80%, rgba(255,255,255,0.1) 0%, transparent 50%),
+        radial-gradient(circle at 40% 20%, rgba(255,255,255,0.08) 0%, transparent 50%);
+      animation: float 20s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) translateX(0px); }
+      33% { transform: translateY(-20px) translateX(10px); }
+      66% { transform: translateY(10px) translateX(-10px); }
+    }
+
+    .auth-container {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 8px;
+      box-shadow: 0 16px 32px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.2), inset 0 1px 0 rgba(255,255,255,0.4);
+      padding: 32px 28px;
+      width: 100%;
+      max-width: 420px;
+      position: relative;
+      z-index: 1;
+      /* No animation or movement */
+      transition: none;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      margin: 0 auto;
+      align-self: center;
+    }
+
+    .auth-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #667eea);
+      background-size: 200% 100%;
+      border-radius: 24px 24px 0 0;
+      animation: shimmer 3s linear infinite;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 0% 0%; }
+      100% { background-position: 200% 0%; }
+    }
+
+    /* No hover effect for .auth-container */
+
+    .logo-section {
+      text-align: center;
+      margin-bottom: 40px;
+      position: relative;
+      padding-bottom: 24px;
+    }
+
+    .logo-section::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      border-radius: 2px;
+      animation: expand 1s ease-out;
+    }
+
+    @keyframes expand {
+      from { width: 0; }
+      to { width: 60px; }
+    }
+
+    .logo-section h1 {
+      font-size: 3rem;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 12px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      animation: gradientShift 5s ease infinite, pulse 3s ease-in-out infinite;
+      text-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .logo-section p {
+      color: var(--text-light);
+      font-size: 1rem;
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+
+    .auth-tabs {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 32px;
+      background: linear-gradient(135deg, rgba(248, 250, 252, 0.9), rgba(241, 245, 249, 0.9));
+      padding: 8px;
+      border-radius: 14px;
+      box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.06),
+                  0 2px 8px rgba(0, 0, 0, 0.04);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-tabs::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 14px 20px;
+      background: transparent;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-light);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      z-index: 1;
+    }
+
+    .tab-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--primary);
+      transform: translateY(-2px);
+    }
+
+    .tab-btn:hover::before {
+      opacity: 1;
+    }
+
+    .tab-btn.active {
+      color: white;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4),
+                  0 2px 10px rgba(118, 75, 162, 0.3);
+      transform: translateY(-2px);
+    }
+
+    .tab-btn.active::before {
+      opacity: 0;
+    }
+
+    .auth-form {
+      display: none;
+      animation: fadeIn 0.4s ease-out;
+    }
+
+    .auth-form.active {
+      display: block;
+    }
+
+    #forgotPasswordLink {
+      color: #667eea;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      display: inline-block;
+      position: relative;
+    }
+
+    #forgotPasswordLink::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+      transition: width 0.3s ease;
+      border-radius: 1px;
+    }
+
+    #forgotPasswordLink:hover {
+      color: #764ba2;
+      transform: translateX(-3px);
+    }
+
+    #forgotPasswordLink:hover::after {
+      width: 100%;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .form-group label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-weight: 600;
+      color: var(--text);
+      font-size: 0.95rem;
+      letter-spacing: 0.3px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid rgba(226, 232, 240, 0.8);
+      border-radius: 12px;
+      font-size: 1rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      font-family: inherit;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .form-group select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      padding-right: 40px;
+    }
+
+    .form-group input:hover,
+    .form-group select:hover,
+    .form-group textarea:hover {
+      border-color: rgba(102, 126, 234, 0.5);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #667eea;
+      background: white;
+      box-shadow: 
+        0 0 0 4px rgba(102, 126, 234, 0.15),
+        0 6px 20px rgba(102, 126, 234, 0.2);
+      transform: translateY(-2px);
+    }
+
+    .form-group textarea {
+      resize: vertical;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+      background-size: 200% 200%;
+      color: white;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 
+        0 8px 25px rgba(102, 126, 234, 0.4),
+        0 0 0 0 rgba(102, 126, 234, 0);
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      font-size: 0.95rem;
+      padding: 16px 24px;
+      animation: gradientShift 5s ease infinite;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .btn-primary::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 100%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #764ba2 0%, #667eea 50%, #764ba2 100%);
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 
+        0 12px 35px rgba(102, 126, 234, 0.5),
+        0 0 0 4px rgba(102, 126, 234, 0.1);
+      animation: none;
+    }
+
+    .btn-primary:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    .btn-primary:hover::after {
+      opacity: 1;
+    }
+
+    .btn-primary:active {
+      transform: translateY(-1px) scale(1);
+    }
+
+    .btn-secondary {
+      background: var(--secondary);
+      color: white;
+      padding: 8px 16px;
+      font-size: 0.9rem;
+    }
+
+    .btn-secondary:hover {
+      background: #475569;
+    }
+
+    .error-message {
+      color: var(--danger);
+      margin-top: 12px;
+      font-size: 0.9rem;
+      display: none;
+    }
+
+    .error-message.show {
+      display: block;
+    }
+
+    .success-message {
+      color: var(--success);
+      margin-top: 12px;
+      font-size: 0.9rem;
+      display: none;
+    }
+
+    .success-message.show {
+      display: block;
+    }
+
+    /* App Header */
+    .app-header {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      padding: 20px 0;
+      margin-bottom: 32px;
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+      animation: slideIn 0.5s ease-out 0.1s both;
+      opacity: 0;
+    }
+
+    #studentScreen.active .app-header {
+      animation: slideIn 0.5s ease-out 0.1s both;
+    }
+
+    .header-content {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .app-header h1 {
+      font-size: 1.75rem;
+      color: var(--primary);
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .user-info span {
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .nav-link {
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      padding: 10px 20px;
+      border: 2px solid var(--primary);
+      border-radius: 25px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      font-weight: 600;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%);
+    }
+
+    .nav-link::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: var(--primary);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+      z-index: -1;
+    }
+
+    .nav-link:hover {
+      background: var(--primary);
+      color: white;
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.4);
+    }
+
+    .nav-link:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    .nav-link:active {
+      transform: translateY(0);
+    }
+
+    /* Container */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px 40px;
+    }
+
+    /* Center content (complaint box) vertically and horizontally when student screen is active */
+    #studentScreen.active main.container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: calc(100vh - 140px);
+      gap: 24px;
+      padding-bottom: 40px;
+    }
+
+    /* Complaint Section */
+    .complaint-section {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      margin-bottom: 32px;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      animation: slideIn 0.6s ease-out 0.2s both;
+      opacity: 0;
+    }
+
+    #studentScreen.active .complaint-section {
+      animation: slideIn 0.6s ease-out 0.2s both;
+    }
+
+    .complaint-section h2 {
+      margin-bottom: 24px;
+      color: var(--text);
+      font-size: 1.5rem;
+    }
+
+    .complaint-form {
+      max-width: 600px;
+    }
+
+    /* Complaints Section */
+    .complaints-section {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.95) 100%);
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      animation: slideIn 0.8s ease-out 0.4s both;
+      opacity: 0;
+    }
+
+    #studentScreen.active .complaints-section {
+      animation: slideIn 0.8s ease-out 0.4s both;
+    }
+
+    .complaints-section h2 {
+      margin-bottom: 24px;
+      color: var(--text);
+      font-size: 1.5rem;
+    }
+
+    .complaints-list {
+      display: grid;
+      gap: 16px;
+    }
+
+    .complaint-card {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .complaint-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.1), transparent);
+      transition: left 0.5s;
+    }
+
+    .complaint-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 10px 30px rgba(37, 99, 235, 0.2);
+      transform: translateY(-5px) scale(1.02);
+    }
+
+    .complaint-card:hover::before {
+      left: 100%;
+    }
+
+    .complaint-card {
+      cursor: pointer;
+    }
+
+    /* Complaint Detail View Styles */
+    .detail-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .detail-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .back-button {
+      background: white;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px;
+      cursor: pointer;
+      font-size: 1.2rem;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 48px;
+    }
+
+    .back-button:hover {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: white;
+      transform: translateX(-4px);
+    }
+
+    .detail-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      flex: 1;
+    }
+
+    .detail-card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .detail-section-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+
+    .detail-info-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+
+    .detail-info-item .icon {
+      font-size: 1.2rem;
+      width: 24px;
+      text-align: center;
+    }
+
+    .detail-description {
+      color: var(--text-light);
+      line-height: 1.7;
+      margin-top: 12px;
+    }
+
+    .photo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .photo-item {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      aspect-ratio: 1;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .photo-item:hover {
+      transform: scale(1.05);
+    }
+
+    .photo-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .timeline {
+      position: relative;
+      padding-left: 32px;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 8px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: var(--border);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 24px;
+      padding-left: 24px;
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -24px;
+      top: 4px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 3px solid white;
+      box-shadow: 0 0 0 2px var(--border);
+    }
+
+    .timeline-item.active::before {
+      background: var(--primary);
+      box-shadow: 0 0 0 2px var(--primary);
+    }
+
+    .timeline-item.completed::before {
+      background: #10b981;
+      box-shadow: 0 0 0 2px #10b981;
+    }
+
+    .timeline-item.pending::before {
+      background: #e5e7eb;
+      box-shadow: 0 0 0 2px #e5e7eb;
+    }
+
+    .timeline-status {
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .timeline-date {
+      font-size: 0.85rem;
+      color: var(--text-light);
+      margin-bottom: 4px;
+    }
+
+    .timeline-note {
+      font-size: 0.9rem;
+      color: var(--text-light);
+      line-height: 1.5;
+    }
+
+    .comments-section {
+      margin-top: 20px;
+    }
+
+    .comment-item {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .comment-item:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .comment-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .comment-content {
+      flex: 1;
+    }
+
+    .comment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .comment-author {
+      font-weight: 600;
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    .comment-time {
+      font-size: 0.85rem;
+      color: var(--text-light);
+    }
+
+    .comment-text {
+      color: var(--text-light);
+      line-height: 1.6;
+      font-size: 0.9rem;
+    }
+
+    .comment-input-container {
+      display: flex;
+      gap: 12px;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 2px solid var(--border);
+    }
+
+    .comment-input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      resize: none;
+    }
+
+    .comment-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .comment-send-btn {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 12px 20px;
+      cursor: pointer;
+      font-size: 1.2rem;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .comment-send-btn:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .complaint-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .complaint-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .status-badge {
+      padding: 8px 16px;
+      border-radius: 25px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    .status-open {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .status-in-progress {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-resolved {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .complaint-description {
+      color: var(--text-light);
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+
+    .complaint-meta {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-size: 0.85rem;
+      color: var(--text-light);
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-light);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-light);
+    }
+
+    .empty-state-icon {
+      font-size: 4rem;
+      margin-bottom: 16px;
+    }
+
+    .empty-state h3 {
+      font-size: 1.25rem;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    @media (max-width: 768px) {
+      .auth-container {
+        padding: 24px;
+      }
+
+      .header-content {
+        flex-direction: column;
+        gap: 16px;
+        align-items: flex-start;
+      }
+
+      .user-info {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Login/Register Screen -->
+  <div id="authScreen" class="screen active">
+    <div class="auth-container">
+      <div class="logo-section">
+        <div style="font-size: 4rem; margin-bottom: 12px; animation: pulse 2s ease-in-out infinite;">🏠</div>
+        <h1>HostelHub</h1>
+        <p>Issue Reporting & Maintenance Tracking</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="tab-btn active" data-tab="login" id="loginTabBtn">🔐 Login</button>
+        <button class="tab-btn" data-tab="register" id="registerTabBtn">📝 Register</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="loginForm" class="auth-form active">
+        <div class="form-group">
+          <label for="loginRole">🔑 Login As</label>
+          <select id="loginRole" required>
+            <option value="">Select Role</option>
+            <option value="student">👨‍🎓 Student</option>
+            <option value="admin">👨‍💼 Admin</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="loginEmail">📧 Email</label>
+          <input type="email" id="loginEmail" required placeholder="Enter your email">
+        </div>
+        <div class="form-group">
+          <label for="loginPassword">🔒 Password</label>
+          <input type="password" id="loginPassword" required placeholder="Enter your password">
+        </div>
+        <div style="text-align: right; margin-bottom: 20px;">
+          <a href="#" id="forgotPasswordLink">Forgot Password?</a>
+        </div>
+        <button type="submit" class="btn btn-primary">🚀 Login</button>
+        <div id="loginError" class="error-message"></div>
+      </form>
+
+      <!-- Forgot Password Form -->
+      <form id="forgotPasswordForm" class="auth-form">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <div style="font-size: 3rem; margin-bottom: 12px;">🔐</div>
+          <h3 style="color: var(--text); margin-bottom: 8px; font-size: 1.5rem;">Reset Password</h3>
+          <p style="color: var(--text-light); font-size: 0.9rem;">Enter your email to reset your password</p>
+        </div>
+        <div class="form-group">
+          <label for="forgotEmail">📧 Email</label>
+          <input type="email" id="forgotEmail" required placeholder="Enter your registered email">
+        </div>
+        <div class="form-group">
+          <label for="newPassword">🔒 New Password</label>
+          <input type="password" id="newPassword" required placeholder="Enter new password">
+        </div>
+        <div class="form-group">
+          <label for="confirmPassword">🔒 Confirm Password</label>
+          <input type="password" id="confirmPassword" required placeholder="Confirm new password">
+        </div>
+        <button type="submit" class="btn btn-primary">Reset Password</button>
+        <div style="text-align: center; margin-top: 20px;">
+          <a href="#" id="backToLoginLink" style="color: #667eea; text-decoration: none; font-size: 0.9rem; font-weight: 600; transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 6px;">
+            ← Back to Login
+          </a>
+        </div>
+        <div id="forgotPasswordError" class="error-message"></div>
+        <div id="forgotPasswordSuccess" class="success-message"></div>
+      </form>
+
+      
+
+      <!-- Register Form -->
+      <form id="registerForm" class="auth-form">
+        <div class="form-group">
+          <label for="registerRole">👤 Register As</label>
+          <select id="registerRole" required>
+            <option value="">Select Role</option>
+            <option value="student">👨‍🎓 Student</option>
+            <option value="admin">👨‍💼 Admin</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="registerName">✏️ Full Name</label>
+          <input type="text" id="registerName" required placeholder="Enter your full name">
+        </div>
+        <div class="form-group" id="studentIdGroup" style="display: none;">
+          <label for="registerStudentId">🆔 Student ID</label>
+          <input type="text" id="registerStudentId" placeholder="Enter your student ID">
+        </div>
+        <div class="form-group">
+          <label for="registerEmail">📧 Email</label>
+          <input type="email" id="registerEmail" required placeholder="Enter your email">
+        </div>
+        <div class="form-group">
+          <label for="registerPassword">🔒 Password</label>
+          <input type="password" id="registerPassword" required placeholder="Create a password">
+        </div>
+        <button type="submit" class="btn btn-primary">Register</button>
+        <div id="registerError" class="error-message"></div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+/* ================== LOGIN ================== */
+document.getElementById("loginForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+
+  const role = document.getElementById("loginRole").value;
+  const email = document.getElementById("loginEmail").value;
+  const password = document.getElementById("loginPassword").value;
+  const errorDiv = document.getElementById("loginError");
+
+  errorDiv.textContent = "";
+
+  try {
+    const response = await fetch("http://localhost:5000/api/login", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        role: role,
+        email: email,
+        password: password
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      errorDiv.textContent = data.message || "Login failed!";
+      return;
+    }
+
+    // Save logged-in user (store under both legacy and app keys for compatibility)
+    localStorage.setItem("currentUser", JSON.stringify(data.user));
+    try {
+      localStorage.setItem('hostelhub_current_user', JSON.stringify(data.user));
+    } catch (err) {
+      console.warn('Could not set hostelhub_current_user', err);
+    }
+
+    // Redirect based on role
+    if (role === "student") {
+      showScreen("studentScreen");   // Your existing function
+    } 
+    else if (role === "admin") {
+      window.location.href = "admin-portal.html";
+    }
+
+  } catch (error) {
+    errorDiv.textContent = "⚠️ Server not responding!";
+  }
+});
+
+/* ================== FORGOT PASSWORD ================== */
+document.getElementById("forgotPasswordForm").addEventListener("submit", async function(e) {
+  e.preventDefault();
+
+  const email = document.getElementById("forgotEmail").value;
+  const newPassword = document.getElementById("newPassword").value;
+  const confirmPassword = document.getElementById("confirmPassword").value;
+
+  const errorDiv = document.getElementById("forgotPasswordError");
+  const successDiv = document.getElementById("forgotPasswordSuccess");
+
+  errorDiv.textContent = "";
+  successDiv.textContent = "";
+
+  if (newPassword !== confirmPassword) {
+    errorDiv.textContent = "❌ Passwords do not match!";
+    return;
+  }
+
+  try {
+    const response = await fetch("http://localhost:5000/api/forgot-password", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        email: email,
+        newPassword: newPassword
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      errorDiv.textContent = data.message || "Password reset failed!";
+      return;
+    }
+
+    successDiv.textContent = "✅ Password updated successfully!";
+
+  } catch (error) {
+    errorDiv.textContent = "⚠️ Server not responding!";
+  }
+});
+
+
+/* ================== SWITCH FORMS ================== */
+document.getElementById("forgotPasswordLink").addEventListener("click", function(e) {
+  e.preventDefault();
+  document.getElementById("loginForm").classList.remove("active");
+  document.getElementById("forgotPasswordForm").classList.add("active");
+});
+
+document.getElementById("backToLoginLink").addEventListener("click", function(e) {
+  e.preventDefault();
+  document.getElementById("forgotPasswordForm").classList.remove("active");
+  document.getElementById("loginForm").classList.add("active");
+});
+</script>
+
+
+  <!-- Student Dashboard -->
+  <div id="studentScreen" class="screen">
+    <header class="app-header">
+      <div class="header-content">
+        <h1>🏠 HostelHub - Student Portal</h1>
+        <div class="user-info">
+          <span id="studentName"></span>
+          <button id="logoutBtn" class="btn btn-secondary">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="complaint-section">
+        <h2>Report a New Issue</h2>
+        <form id="complaintForm" class="complaint-form">
+          <div class="form-group">
+            <label for="complaintTitle">📋 Title</label>
+            <input type="text" id="complaintTitle" required placeholder="e.g., Leaking Faucet in Kitchen">
+          </div>
+          <div class="form-group">
+            <label for="complaintIssueType">🔧 Issue Type</label>
+            <select id="complaintIssueType" required>
+              <option value="">Select Issue Type</option>
+              <option value="Plumbing">💧 Plumbing</option>
+              <option value="Electrical">⚡ Electrical</option>
+              <option value="Furniture">🪑 Furniture</option>
+              <option value="Wi-Fi">📶 Wi-Fi</option>
+              <option value="Cleaning">🧹 Cleaning</option>
+              <option value="Other">🔧 Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="complaintLocation">📍 Location</label>
+            <input type="text" id="complaintLocation" required placeholder="e.g., Block C, Room 301">
+          </div>
+          <div class="form-group">
+            <label for="complaintDescription">📝 Description</label>
+            <textarea id="complaintDescription" required rows="4" placeholder="Describe the issue in detail..."></textarea>
+          </div>
+          <div class="form-group">
+            <label for="complaintPhotos">📷 Attach Photos (Optional)</label>
+            <input type="file" id="complaintPhotos" accept="image/*" multiple>
+            <div id="photoPreview" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 10px;"></div>
+          </div>
+          <button type="submit" class="btn btn-primary">🚀 Submit Complaint</button>
+          <div id="complaintError" class="error-message"></div>
+          <div id="complaintSuccess" class="success-message"></div>
+        </form>
+      </section>
+
+      <section class="complaints-section">
+        <h2>My Complaints</h2>
+        <div id="complaintsList" class="complaints-list">
+          <div class="loading">Loading complaints...</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Complaint Detail Screen -->
+  <div id="complaintDetailScreen" class="screen">
+    <header class="app-header">
+      <div class="header-content">
+        <h1>🏠 HostelHub - Student Portal</h1>
+        <div class="user-info">
+          <span id="detailStudentName"></span>
+          <button id="detailLogoutBtn" class="btn btn-secondary">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="container">
+      <div class="detail-container">
+        <div class="detail-header">
+          <button class="back-button" onclick="showComplaintsList()">←</button>
+          <div class="detail-title" id="detailRequestNumber">Request #</div>
+        </div>
+
+        <div class="detail-card">
+          <div style="margin-bottom: 20px;">
+            <span class="status-badge" id="detailStatusBadge">Status</span>
+          </div>
+          <h2 style="font-size: 1.5rem; font-weight: 700; color: var(--text); margin-bottom: 20px;" id="detailTitle">Title</h2>
+          
+          <div class="detail-info-item">
+            <span class="icon">💧</span>
+            <span><strong>Issue:</strong> <span id="detailIssueType">-</span></span>
+          </div>
+          <div class="detail-info-item">
+            <span class="icon">📍</span>
+            <span><strong>Location:</strong> <span id="detailLocation">-</span></span>
+          </div>
+          <div class="detail-info-item">
+            <span class="icon">📅</span>
+            <span><strong>Submitted:</strong> <span id="detailSubmitted">-</span></span>
+          </div>
+          <div class="detail-description" id="detailDescription">Description</div>
+        </div>
+
+        <div class="detail-card">
+          <div class="detail-section-title">Attached Photos</div>
+          <div class="photo-grid" id="detailPhotos">
+            <!-- Photos will be inserted here -->
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <div class="detail-section-title">Progress Updates</div>
+          <div class="timeline" id="detailTimeline">
+            <!-- Timeline will be inserted here -->
+          </div>
+        </div>
+
+        <div class="detail-card">
+          <div class="detail-section-title">Comments</div>
+          <div class="comments-section" id="detailComments">
+            <!-- Comments will be inserted here -->
+          </div>
+          <div class="comment-input-container">
+            <textarea class="comment-input" id="newCommentInput" placeholder="Add a follow-up comment..." rows="2"></textarea>
+            <button class="comment-send-btn" onclick="addComment()">✈️</button>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // Shared Data Storage Keys (same as admin interface)
+    const STORAGE_KEYS = {
+      USERS: 'hostelhub_users',
+      COMPLAINTS: 'hostelhub_complaints',
+      CURRENT_USER: 'hostelhub_current_user'
+    };
+
+    // Initialize data if needed
+    function initializeData() {
+      let users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
+      
+      if (!localStorage.getItem(STORAGE_KEYS.COMPLAINTS)) {
+        localStorage.setItem(STORAGE_KEYS.COMPLAINTS, JSON.stringify([]));
+      }
+    }
+
+    // Utility Functions
+    function showScreen(screenId) {
+      const currentScreen = document.querySelector('.screen.active');
+      const newScreen = document.getElementById(screenId);
+      
+      // Immediately scroll to top
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      document.body.scrollTop = 0;
+      document.documentElement.scrollTop = 0;
+      
+      if (currentScreen && currentScreen !== newScreen) {
+        // Hide current screen
+        currentScreen.classList.remove('active');
+        currentScreen.style.display = 'none';
+        
+        // Show new screen with animation
+        newScreen.classList.add('active');
+        newScreen.style.display = 'block';
+        
+        // Force scroll to top multiple times to ensure it stays
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'instant' });
+          document.body.scrollTop = 0;
+          document.documentElement.scrollTop = 0;
+        }, 100);
+        
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'instant' });
+          document.body.scrollTop = 0;
+          document.documentElement.scrollTop = 0;
+        }, 300);
+        
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'instant' });
+          document.body.scrollTop = 0;
+          document.documentElement.scrollTop = 0;
+        }, 600);
+      } else {
+        // First time showing screen
+        document.querySelectorAll('.screen').forEach(screen => {
+          screen.classList.remove('active');
+          screen.style.display = 'none';
+        });
+        newScreen.classList.add('active');
+        newScreen.style.display = 'block';
+        
+        // Force scroll to top
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+      }
+    }
+
+    function showError(elementId, message) {
+      const element = document.getElementById(elementId);
+      element.textContent = message;
+      element.classList.add('show');
+      setTimeout(() => {
+        element.classList.remove('show');
+      }, 5000);
+    }
+
+    function showSuccess(elementId, message) {
+      const element = document.getElementById(elementId);
+      element.textContent = message;
+      element.classList.add('show');
+      setTimeout(() => {
+        element.classList.remove('show');
+      }, 3000);
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function formatDate(dateString) {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    }
+
+    // Auto-refresh complaints every 5 seconds to see admin updates
+    function startAutoRefresh() {
+      setInterval(() => {
+        const currentUser = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
+        if (currentUser) {
+          const user = JSON.parse(currentUser);
+          if (user.role === 'student') {
+            loadStudentComplaints();
+          }
+        }
+      }, 5000);
+    }
+
+    // Auth Tab Switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+        
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+        
+        btn.classList.add('active');
+        document.getElementById(`${tab}Form`).classList.add('active');
+      });
+    });
+
+    // Forgot Password Link
+    document.getElementById('forgotPasswordLink')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      // Hide tabs and login form
+      document.querySelectorAll('.tab-btn').forEach(b => b.style.display = 'none');
+      document.getElementById('loginForm').classList.remove('active');
+      // Show forgot password form
+      document.getElementById('forgotPasswordForm').classList.add('active');
+    });
+
+    // Back to Login Link
+    document.getElementById('backToLoginLink')?.addEventListener('click', (e) => {
+      e.preventDefault();
+      // Hide forgot password form
+      document.getElementById('forgotPasswordForm').classList.remove('active');
+      // Show tabs and login form
+      document.querySelectorAll('.tab-btn').forEach(b => b.style.display = 'flex');
+      document.getElementById('loginTabBtn').classList.add('active');
+      document.getElementById('loginForm').classList.add('active');
+    });
+
+    // Forgot Password Form
+    document.getElementById('forgotPasswordForm')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById('forgotEmail').value;
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+
+      if (newPassword !== confirmPassword) {
+        showError('forgotPasswordError', 'Passwords do not match');
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        showError('forgotPasswordError', 'Password must be at least 6 characters');
+        return;
+      }
+
+      const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
+      const userIndex = users.findIndex(u => u.email === email);
+
+      if (userIndex === -1) {
+        showError('forgotPasswordError', 'Email not found');
+        return;
+      }
+
+      // Update password
+      users[userIndex].password = newPassword;
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+
+      showSuccess('forgotPasswordSuccess', 'Password reset successfully! Redirecting to login...');
+      
+      setTimeout(() => {
+        // Reset form and go back to login
+        document.getElementById('forgotPasswordForm').reset();
+        document.getElementById('forgotPasswordForm').classList.remove('active');
+        document.querySelectorAll('.tab-btn').forEach(b => b.style.display = 'flex');
+        document.getElementById('loginTabBtn').classList.add('active');
+        document.getElementById('loginForm').classList.add('active');
+        // Pre-fill email in login form
+        document.getElementById('loginEmail').value = email;
+      }, 2000);
+    });
+
+    // Show/hide Student ID field based on role selection
+    document.getElementById('registerRole')?.addEventListener('change', (e) => {
+      const studentIdGroup = document.getElementById('studentIdGroup');
+      if (e.target.value === 'student') {
+        studentIdGroup.style.display = 'block';
+        document.getElementById('registerStudentId').required = true;
+      } else {
+        studentIdGroup.style.display = 'none';
+        document.getElementById('registerStudentId').required = false;
+        document.getElementById('registerStudentId').value = '';
+      }
+    });
+
+    // Login Form
+    document.getElementById('loginForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const selectedRole = document.getElementById('loginRole').value;
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+
+      if (!selectedRole) {
+        showError('loginError', 'Please select a role (Student or Admin)');
+        return;
+      }
+
+      const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
+      const user = users.find(u => u.email === email && u.password === password);
+
+      if (!user) {
+        showError('loginError', 'Invalid email or password');
+        return;
+      }
+
+      // Check if selected role matches user's actual role
+      if (user.role !== selectedRole) {
+        showError('loginError', `This account is registered as ${user.role}. Please select "${user.role}" role.`);
+        return;
+      }
+
+      // Block admin access to student portal
+      if (user.role === 'admin') {
+        showError('loginError', 'Admins cannot access Student Portal. Please use Admin Portal.');
+        return;
+      }
+
+      // Add success animation before transition
+      const loginButton = e.target.querySelector('button[type="submit"]');
+      loginButton.textContent = '✓ Logging in...';
+      loginButton.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+      
+      setTimeout(() => {
+        // Force scroll to top before transition
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+        
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+        
+        // Only students can access student portal
+        showScreen('studentScreen');
+        loadStudentDashboard();
+        
+        // Multiple scroll locks to prevent any scrolling
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'instant' });
+          document.body.scrollTop = 0;
+          document.documentElement.scrollTop = 0;
+        }, 100);
+        
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'instant' });
+          document.body.scrollTop = 0;
+          document.documentElement.scrollTop = 0;
+        }, 500);
+        
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'instant' });
+          document.body.scrollTop = 0;
+          document.documentElement.scrollTop = 0;
+        }, 1000);
+      }, 500);
+    });
+
+    // Register Form
+    document.getElementById('registerForm').addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const role = document.getElementById('registerRole').value;
+      const name = document.getElementById('registerName').value;
+      const studentId = document.getElementById('registerStudentId').value;
+      const email = document.getElementById('registerEmail').value;
+      const password = document.getElementById('registerPassword').value;
+
+      if (!role) {
+        showError('registerError', 'Please select a role (Student or Admin)');
+        return;
+      }
+
+      const users = JSON.parse(localStorage.getItem(STORAGE_KEYS.USERS) || '[]');
+      
+      if (users.find(u => u.email === email)) {
+        showError('registerError', 'Email already registered');
+        return;
+      }
+
+      if (role === 'student' && studentId) {
+        if (users.find(u => u.studentId === studentId)) {
+          showError('registerError', 'Student ID already registered');
+          return;
+        }
+      }
+
+      // Add success animation before transition
+      const registerButton = e.target.querySelector('button[type="submit"]');
+      registerButton.textContent = '✓ Creating account...';
+      registerButton.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+
+      const newUser = {
+        id: Date.now().toString(),
+        email,
+        password,
+        name,
+        studentId: role === 'student' ? studentId : undefined,
+        role: role,
+        createdAt: new Date().toISOString()
+      };
+
+      users.push(newUser);
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(newUser));
+
+      setTimeout(() => {
+        // Force scroll to top before transition
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+        
+        // Block admin registration in student portal
+        if (role === 'admin') {
+          showError('registerError', 'Cannot register as Admin in Student Portal. Please use Admin Portal.');
+          registerButton.textContent = 'Register';
+          registerButton.style.background = '';
+          return;
+        }
+        
+        // Only students can register in student portal
+        showScreen('studentScreen');
+        loadStudentDashboard();
+        
+        // Multiple scroll locks to prevent any scrolling
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'instant' });
+          document.body.scrollTop = 0;
+          document.documentElement.scrollTop = 0;
+        }, 100);
+        
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'instant' });
+          document.body.scrollTop = 0;
+          document.documentElement.scrollTop = 0;
+        }, 500);
+        
+        setTimeout(() => {
+          window.scrollTo({ top: 0, behavior: 'instant' });
+          document.body.scrollTop = 0;
+          document.documentElement.scrollTop = 0;
+        }, 1000);
+      }, 500);
+    });
+
+    // Logout
+    document.getElementById('logoutBtn')?.addEventListener('click', () => {
+      // Add fade out animation
+      const logoutBtn = document.getElementById('logoutBtn');
+      logoutBtn.textContent = 'Logging out...';
+      logoutBtn.style.opacity = '0.7';
+      
+      setTimeout(() => {
+        localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+        showScreen('authScreen');
+        document.getElementById('loginForm').reset();
+        document.getElementById('registerForm').reset();
+        logoutBtn.textContent = 'Logout';
+        logoutBtn.style.opacity = '1';
+      }, 400);
+    });
+
+    // Student Dashboard
+    function loadStudentDashboard() {
+      const user = JSON.parse(localStorage.getItem(STORAGE_KEYS.CURRENT_USER) || '{}');
+      document.getElementById('studentName').textContent = `Welcome, ${user.name}`;
+      loadStudentComplaints();
+      
+      // Ensure page stays at top
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      document.body.scrollTop = 0;
+      document.documentElement.scrollTop = 0;
+    }
+
+    function loadStudentComplaints() {
+      const listElement = document.getElementById('complaintsList');
+      const user = JSON.parse(localStorage.getItem(STORAGE_KEYS.CURRENT_USER) || '{}');
+      const complaints = JSON.parse(localStorage.getItem(STORAGE_KEYS.COMPLAINTS) || '[]');
+      const studentComplaints = complaints.filter(c => c.studentId === user.id).sort((a, b) => 
+        new Date(b.createdAt) - new Date(a.createdAt)
+      );
+      
+      if (studentComplaints.length === 0) {
+        listElement.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📋</div>
+            <h3>No complaints yet</h3>
+            <p>Submit your first complaint using the form above</p>
+          </div>
+        `;
+        return;
+      }
+
+      listElement.innerHTML = studentComplaints.map(complaint => `
+        <div class="complaint-card" onclick="showComplaintDetail('${complaint.id}')">
+          <div class="complaint-header">
+            <div class="complaint-title">${escapeHtml(complaint.title)}</div>
+            <span class="status-badge status-${complaint.status.toLowerCase().replace(' ', '-')}">
+              ${complaint.status}
+            </span>
+          </div>
+          <div class="complaint-description">${escapeHtml(complaint.description)}</div>
+          <div class="complaint-meta">
+            <span>📅 ${formatDate(complaint.createdAt)}</span>
+            ${complaint.updatedAt !== complaint.createdAt ? `<span>🔄 Updated: ${formatDate(complaint.updatedAt)}</span>` : ''}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Show complaint detail
+    let currentComplaintId = null;
+    function showComplaintDetail(complaintId) {
+      currentComplaintId = complaintId;
+      const complaints = JSON.parse(localStorage.getItem(STORAGE_KEYS.COMPLAINTS) || '[]');
+      const complaint = complaints.find(c => c.id === complaintId);
+      
+      if (!complaint) return;
+
+      const user = JSON.parse(localStorage.getItem(STORAGE_KEYS.CURRENT_USER) || '{}');
+      document.getElementById('detailStudentName').textContent = `Welcome, ${user.name}`;
+
+      // Set request number
+      document.getElementById('detailRequestNumber').textContent = `Request #${complaint.id.slice(-5)}`;
+
+      // Set status badge
+      const statusBadge = document.getElementById('detailStatusBadge');
+      statusBadge.textContent = complaint.status;
+      statusBadge.className = `status-badge status-${complaint.status.toLowerCase().replace(' ', '-')}`;
+
+      // Set details
+      document.getElementById('detailTitle').textContent = complaint.title || 'No title';
+      document.getElementById('detailIssueType').textContent = complaint.issueType || 'Not specified';
+      document.getElementById('detailLocation').textContent = complaint.location || 'Not specified';
+      document.getElementById('detailSubmitted').textContent = formatDate(complaint.createdAt);
+      document.getElementById('detailDescription').textContent = complaint.description || 'No description';
+
+      // Set photos
+      const photosContainer = document.getElementById('detailPhotos');
+      if (complaint.photos && complaint.photos.length > 0) {
+        photosContainer.innerHTML = complaint.photos.map(photo => `
+          <div class="photo-item">
+            <img src="${photo}" alt="Complaint photo" onclick="window.open('${photo}', '_blank')">
+          </div>
+        `).join('');
+      } else {
+        photosContainer.innerHTML = '<p style="color: var(--text-light);">No photos attached</p>';
+      }
+
+      // Set timeline
+      const timelineContainer = document.getElementById('detailTimeline');
+      if (complaint.timeline && complaint.timeline.length > 0) {
+        const sortedTimeline = [...complaint.timeline].sort((a, b) => new Date(b.date) - new Date(a.date));
+        timelineContainer.innerHTML = sortedTimeline.map(item => {
+          const statusClass = item.type === 'completed' ? 'completed' : 
+                             item.type === 'active' ? 'active' : 'pending';
+          return `
+            <div class="timeline-item ${statusClass}">
+              <div class="timeline-status">${item.status}</div>
+              <div class="timeline-date">${formatDate(item.date)}</div>
+              <div class="timeline-note">${escapeHtml(item.note || '')}</div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        timelineContainer.innerHTML = `
+          <div class="timeline-item completed">
+            <div class="timeline-status">Submitted</div>
+            <div class="timeline-date">${formatDate(complaint.createdAt)}</div>
+            <div class="timeline-note">Your request has been submitted successfully.</div>
+          </div>
+        `;
+      }
+
+      // Set comments
+      const commentsContainer = document.getElementById('detailComments');
+      if (complaint.comments && complaint.comments.length > 0) {
+        commentsContainer.innerHTML = complaint.comments.map(comment => `
+          <div class="comment-item">
+            <div class="comment-avatar">${comment.author.charAt(0).toUpperCase()}</div>
+            <div class="comment-content">
+              <div class="comment-header">
+                <span class="comment-author">${escapeHtml(comment.author)}</span>
+                <span class="comment-time">${formatTimeAgo(comment.date)}</span>
+              </div>
+              <div class="comment-text">${escapeHtml(comment.text)}</div>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        commentsContainer.innerHTML = '<p style="color: var(--text-light);">No comments yet</p>';
+      }
+
+      // Clear comment input
+      document.getElementById('newCommentInput').value = '';
+
+      // Show detail screen
+      showScreen('complaintDetailScreen');
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+
+    // Show complaints list
+    function showComplaintsList() {
+      showScreen('studentScreen');
+      loadStudentComplaints();
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+
+    // Add comment
+    function addComment() {
+      if (!currentComplaintId) return;
+      
+      const commentText = document.getElementById('newCommentInput').value.trim();
+      if (!commentText) return;
+
+      const user = JSON.parse(localStorage.getItem(STORAGE_KEYS.CURRENT_USER) || '{}');
+      const complaints = JSON.parse(localStorage.getItem(STORAGE_KEYS.COMPLAINTS) || '[]');
+      const complaintIndex = complaints.findIndex(c => c.id === currentComplaintId);
+      
+      if (complaintIndex === -1) return;
+
+      if (!complaints[complaintIndex].comments) {
+        complaints[complaintIndex].comments = [];
+      }
+
+      complaints[complaintIndex].comments.push({
+        author: user.name,
+        text: commentText,
+        date: new Date().toISOString()
+      });
+
+      complaints[complaintIndex].updatedAt = new Date().toISOString();
+      localStorage.setItem(STORAGE_KEYS.COMPLAINTS, JSON.stringify(complaints));
+
+      // Refresh detail view
+      showComplaintDetail(currentComplaintId);
+    }
+
+    // Format time ago
+    function formatTimeAgo(dateString) {
+      const date = new Date(dateString);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffHours < 24) return `${diffHours}h ago`;
+      if (diffDays < 7) return `${diffDays}d ago`;
+      return formatDate(dateString);
+    }
+
+    // Detail logout
+    document.getElementById('detailLogoutBtn')?.addEventListener('click', () => {
+      localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+      showScreen('authScreen');
+      document.getElementById('loginForm').reset();
+      document.getElementById('registerForm').reset();
+    });
+
+    // Handle photo preview
+    document.getElementById('complaintPhotos')?.addEventListener('change', (e) => {
+      const preview = document.getElementById('photoPreview');
+      preview.innerHTML = '';
+      const files = Array.from(e.target.files);
+      
+      files.forEach(file => {
+        if (file.type.startsWith('image/')) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.style.width = '100%';
+            img.style.height = '100px';
+            img.style.objectFit = 'cover';
+            img.style.borderRadius = '8px';
+            preview.appendChild(img);
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    });
+
+    // Submit Complaint (localStorage-backed)
+    document.getElementById('complaintForm')?.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      try {
+        const title = document.getElementById('complaintTitle')?.value.trim() || '';
+        const issueType = document.getElementById('complaintIssueType')?.value || '';
+        const location = document.getElementById('complaintLocation')?.value.trim() || '';
+        const description = document.getElementById('complaintDescription')?.value.trim() || '';
+        const photoInput = document.getElementById('complaintPhotos');
+        const photoFiles = photoInput ? Array.from(photoInput.files) : [];
+
+        const currentUser = JSON.parse(localStorage.getItem(STORAGE_KEYS.CURRENT_USER) || 'null');
+        if (!currentUser || currentUser.role !== 'student') {
+          showError('complaintError', 'Please log in as a student to submit a complaint.');
+          console.warn('Complaint submit blocked: no current student user');
+          return;
+        }
+
+        if (!title || !issueType || !location || !description) {
+          showError('complaintError', 'Please fill in all required fields.');
+          console.warn('Complaint submit validation failed', { title, issueType, location, description });
+          return;
+        }
+
+        // Convert photos to base64 (if any)
+        const photoPromises = photoFiles.map(file => new Promise((resolve) => {
+          if (file && file.type && file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (evt) => resolve(evt.target.result);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(file);
+          } else {
+            resolve(null);
+          }
+        }));
+
+        const photoData = await Promise.all(photoPromises);
+        const photos = photoData.filter(p => p !== null);
+
+        const complaints = JSON.parse(localStorage.getItem(STORAGE_KEYS.COMPLAINTS) || '[]');
+        const now = new Date().toISOString();
+        const complaintId = Date.now().toString();
+
+        const newComplaint = {
+          id: complaintId,
+          title,
+          issueType,
+          location,
+          description,
+          photos,
+          status: 'Open',
+          studentId: currentUser.id,
+          studentName: currentUser.name,
+          studentEmail: currentUser.email,
+          studentIdNumber: currentUser.studentId,
+          createdAt: now,
+          updatedAt: now,
+          timeline: [
+            {
+              status: 'Submitted',
+              date: now,
+              note: 'Your request has been submitted successfully.',
+              type: 'completed'
+            }
+          ],
+          comments: []
+        };
+
+        complaints.push(newComplaint);
+        localStorage.setItem(STORAGE_KEYS.COMPLAINTS, JSON.stringify(complaints));
+
+        document.getElementById('complaintForm').reset();
+        const previewEl = document.getElementById('photoPreview');
+        if (previewEl) previewEl.innerHTML = '';
+        showSuccess('complaintSuccess', 'Complaint submitted successfully!');
+        console.log('Complaint saved locally', newComplaint);
+        loadStudentComplaints();
+      } catch (err) {
+        console.error('Error submitting complaint:', err);
+        showError('complaintError', 'An unexpected error occurred. See console for details.');
+      }
+    });
+
+    // Smooth page navigation with transition
+    function smoothNavigate(event, url) {
+      event.preventDefault();
+      
+      // Add fade out animation
+      document.body.style.opacity = '0';
+      document.body.style.transform = 'translateX(20px)';
+      document.body.style.transition = 'all 0.3s ease-out';
+      
+      setTimeout(() => {
+        window.location.href = url;
+      }, 300);
+    }
+
+    // Check if user is already logged in on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      // Always show login page first
+      document.getElementById('authScreen').classList.add('active');
+      document.getElementById('authScreen').style.display = 'block';
+      document.getElementById('studentScreen').classList.remove('active');
+      document.getElementById('studentScreen').style.display = 'none';
+      
+      // Scroll to top
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      document.body.scrollTop = 0;
+      document.documentElement.scrollTop = 0;
+      
+      initializeData();
+      startAutoRefresh();
+      
+      const currentUser = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
+      if (currentUser) {
+        const user = JSON.parse(currentUser);
+        if (user.role === 'student') {
+          // User is logged in, but still show login first, then they can login again
+          // Or auto-login them - you can change this behavior
+          // For now, showing login page first as requested
+        }
+      }
+      async function loadMyComplaints() {
+  const user = JSON.parse(localStorage.getItem("currentUser"));
+
+  const response = await fetch("http://localhost:5000/api/complaints");
+  const complaints = await response.json();
+
+  const myComplaints = complaints.filter(c => c.student_id === user.student_id);
+
+  const listDiv = document.getElementById("myComplaintsList");
+  listDiv.innerHTML = "";
+
+  myComplaints.forEach(c => {
+    listDiv.innerHTML += `
+      <div class="complaint-card">
+        <h3>${c.title}</h3>
+        <p>Type: ${c.issue_type}</p>
+        <p>Status: ${c.status}</p>
+        <p>${c.description}</p>
+      </div>
+    `;
+  });
+}
+
+loadMyComplaints();
+
+    });
+  </script>
+</body>
+</html>
